@@ -8,10 +8,14 @@ class AIService
 {
     public function classify(string $text, array $options)
     {
-        $response = Http::timeout(10)->post('http://127.0.0.1:8000/clasificar', [
-            'text' => $text,
-            'options' => $options
-        ]);
+        $url = config('services.ai.url') . '/clasificar';
+
+        $response = Http::timeout(120)
+            ->retry(2, 200)
+            ->post($url, [
+                'text' => $text,
+                'options' => $options
+            ]);
 
         if (!$response->successful()) {
             return [

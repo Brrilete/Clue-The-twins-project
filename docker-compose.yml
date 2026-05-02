@@ -1,0 +1,64 @@
+services:
+
+  laravel:
+    build:
+      context: ./rpg-game
+    ports:
+      - "8001:8000"
+    depends_on:
+      - db
+    environment:
+      - DB_CONNECTION=mysql
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_DATABASE=rpg_game
+      - DB_USERNAME=user
+      - DB_PASSWORD=secret
+    volumes:
+      - ./rpg-game:/var/www    # ← agrega esto
+    command: php artisan serve --host=0.0.0.0 --port=8000
+
+  ai:
+    build:
+      context: ./IA
+    ports:
+      - "8002:8000"
+    depends_on:
+      - ollama
+    environment:
+      - OLLAMA_URL=http://ollama:11434/api/generate
+    command: uvicorn main:app --host 0.0.0.0 --port=8000
+
+  ollama:
+    image: ollama/ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+  db:
+    image: mysql:8
+    restart: always
+    environment:
+      MYSQL_DATABASE: rpg_game
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: user
+      MYSQL_PASSWORD: secret
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./rpg_game.sql:/docker-entrypoint-initdb.d/rpg_game.sql
+  phpmyadmin:
+      image: phpmyadmin/phpmyadmin
+      ports:
+        - "8080:80"
+      environment:
+        PMA_HOST: db
+        PMA_PORT: 3306
+        MYSQL_ROOT_PASSWORD: root
+      depends_on:
+        - db
+volumes:
+  db_data:
+  ollama_data:

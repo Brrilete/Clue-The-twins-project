@@ -3,12 +3,12 @@ from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import requests
-
+import os
 app = FastAPI()
 
 model = SentenceTransformer('intfloat/multilingual-e5-base')
 
-OLLAMA_URL = "http://localhost:11434/api/generate"
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434/api/generate")
 
 
 class RequestData(BaseModel):

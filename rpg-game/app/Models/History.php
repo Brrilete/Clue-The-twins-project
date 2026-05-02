@@ -10,12 +10,13 @@ class History extends Model
     use HasFactory;
     protected $table = 'history';
 
+    public $timestamps = false;
     protected $fillable = [
         'player_id',
         'scene_id',
         'action_key',
-        'updated_at'
-
+        'message',
+        'is_player',
     ];
 
     public function player()
