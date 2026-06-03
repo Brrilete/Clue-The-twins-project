@@ -1,8 +1,8 @@
 <?php
-
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
-
+Route::post('/auth/register', [AuthController::class, 'register']);
+Route::get('/auth/verify', [AuthController::class, 'verify']);
 Route::get('/auth/google', [AuthController::class, 'redirectToGoogle']);
 Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback']);
 Route::get('/auth/github', [AuthController::class, 'redirectToGithub']);
@@ -10,4 +10,4 @@ Route::get('/auth/github/callback', [AuthController::class, 'handleGithubCallbac
 Route::get('/auth/guest', [AuthController::class, 'guest']);
 Route::get('/{any}', function () {
     return file_get_contents(public_path('index.html'));
-})->where('any', '.*');
+})->where('any', '^(?!assets|favicon).*');
