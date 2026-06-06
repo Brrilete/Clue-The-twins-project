@@ -2,26 +2,59 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
+from rapidfuzz import fuzz
 import requests
 import os
+
 from synonyms import SYNONYMS
 
 app = FastAPI()
-model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+model = SentenceTransformer('intfloat/multilingual-e5-base')
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434/api/generate")
 
 class RequestData(BaseModel):
     text: str
     options: dict
 
+# 🔹 CORRECCIÓN DE TYPOS
+def correct_typos(text: str) -> str:
+    words = text.lower().split()
+    corrected_words = []
+
+    # Recopila todas las palabras conocidas de los sinónimos
+    all_words = set()
+    for syns in SYNONYMS.values():
+        for syn in syns:
+            for word in syn.split():
+                if len(word) >= 4:
+                    all_words.add(word)
+
+    for word in words:
+        if len(word) < 4:
+            corrected_words.append(word)
+            continue
+
+        best_match = word
+        best_score = 0
+
+        for known_word in all_words:
+            score = fuzz.ratio(word, known_word)
+            if score > 80 and score > best_score:
+                best_score = score
+                best_match = known_word
+
+        corrected_words.append(best_match)
+
+    return ' '.join(corrected_words)
+
 # 🔹 EMBEDDINGS
 def get_top_options(text, options):
     text = text.lower().strip()
-    user_emb = model.encode([text])
+    user_emb = model.encode([f"query: {text}"])
     scores = []
     for option_id, desc in options.items():
         desc_clean = desc.lower().strip()
-        opt_emb = model.encode([desc_clean])
+        opt_emb = model.encode([f"passage: {desc_clean}"])
         score = cosine_similarity(user_emb, opt_emb)[0][0]
         scores.append((option_id, desc, score))
     scores.sort(key=lambda x: x[2], reverse=True)
@@ -42,6 +75,7 @@ Opciones:
 {options_text}
 REGLAS:
 - Interpreta lenguaje vulgar o indirecto
+- Interpreta errores ortográficos y typos
 - Responde SOLO con una de estas claves:
 {", ".join(valid_options)}
 - NO expliques nada
@@ -71,8 +105,13 @@ REGLAS:
 # 🔹 ENDPOINT
 @app.post("/clasificar")
 def clasificar(data: RequestData):
-    candidates = get_top_options(data.text, data.options)
-    text_lower = data.text.lower().strip()
+    # Corregir typos antes de procesar
+    corrected_text = correct_typos(data.text)
+    if corrected_text != data.text.lower():
+        print(f"Typo corregido: '{data.text}' → '{corrected_text}'")
+
+    candidates = get_top_options(corrected_text, data.options)
+    text_lower = corrected_text.lower().strip()
 
     # 🔥 BOOST POR SINÓNIMOS
     for i, c in enumerate(candidates):
@@ -99,7 +138,7 @@ def clasificar(data: RequestData):
     if diff > 0.05:
         decision = candidates[0][0]
     else:
-        decision = ask_llm(data.text, candidates)
+        decision = ask_llm(corrected_text, candidates)
 
     return {
         "opcion": decision,
