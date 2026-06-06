@@ -1,9 +1,12 @@
 SYNONYMS = {
     'examinar_cadaver': [
+        'investigar', 'investigar cuerpo', 'investigar el cuerpo',
+        'investigar cadaver', 'investigar al muerto', 'investigar al hombre',
         'mirar el cuerpo', 'ver al muerto', 'examinar al hombre',
         'revisar el cadáver', 'tocar el cuerpo', 'acercarme al muerto',
         'ver qué le pasó', 'comprobar si respira', 'ver si está muerto',
-        'palpar el cuerpo', 'buscar en sus bolsillos', 'registrar al muerto'
+        'palpar el cuerpo', 'buscar en sus bolsillos', 'registrar al muerto',
+        'buscar pistas', 'buscar en la habitación'
     ],
     'examinar_maleta': [
         'abrir la maleta', 'revisar la maleta', 'ver qué hay en la maleta',
