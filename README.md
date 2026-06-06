@@ -14,7 +14,7 @@ Terminal 2:
 WEB:
     https://petroleum-blah-dinner.ngrok-free.dev/
 
-
+PARA LA BASE DE DATOS: http://localhost:8080
 
 Cada vez que haga un cambio 
 Para que se vea reflejado en los diferentes dispositivos:

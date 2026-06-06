@@ -2,4 +2,4 @@ __pycache__/
 *.pyc
 node_modules/
 .env
-vendor/
+vendor/rpg-game/.env

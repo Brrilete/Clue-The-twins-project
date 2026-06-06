@@ -41,12 +41,23 @@ class PrisonService
 
         return \Carbon\Carbon::parse($entry->created_at)->addHours(48);
     }
+    
 
     public function canBeReleased(Player $player): bool
     {
         $releaseTime = $this->getReleaseTime($player);
         if (!$releaseTime) return false;
         return now()->gte($releaseTime);
+    }
+    public function timeRemaining(Player $player): string
+    {
+        $releaseTime = $this->getReleaseTime($player);
+        if (!$releaseTime) return '48 horas';
+
+        $diff = now()->diff($releaseTime);
+        if ($diff->invert) return 'Puedes salir';
+
+        return $diff->h . ' horas y ' . $diff->i . ' minutos';
     }
 
     public function handlePrisonAction(Player $player, string $text): ?array
@@ -59,17 +70,12 @@ class PrisonService
                 'player' => $this->playerData($player),
                 'scene' => 'Calabozo',
                 'action' => 'liberado',
-                'text' => 'Un guardia abre tu celda.\n"Es su hora. Recoja sus cosas."\n\nHan pasado 48 horas.',
+                'text' => "Un guardia abre tu celda.\n\"Es su hora. Recoja sus cosas.\"\n\nHan pasado 48 horas.",
                 'next_scene' => 11
             ];
         }
 
-        // Detectar si está respondiendo al acertijo
-        if ($this->isAnsweringRiddle($player, $text)) {
-            return $this->handleRiddleAnswer($player, $text);
-        }
-
-        return null; // Continuar con lógica normal
+        return null;
     }
 
     private function isAnsweringRiddle(Player $player, string $text): bool
@@ -138,21 +144,11 @@ class PrisonService
             'player' => $this->playerData($player),
             'scene' => 'Calabozo',
             'action' => 'acertijo_fallado',
-            'text' => 'El preso niega con la cabeza.\n "Piénsalo mejor." \n Se gira hacia la pared.',
+            'text' => "El preso niega con la cabeza.\n\"Piénsalo mejor.\"\nSe gira hacia la pared.",
             'next_scene' => null
         ];
     }
 
-    public function timeRemaining(Player $player): string
-    {
-        $releaseTime = $this->getReleaseTime($player);
-        if (!$releaseTime) return '48 horas';
-
-        $diff = now()->diff($releaseTime);
-        if ($diff->invert) return 'Puedes salir';
-
-        return $diff->h . ' horas y ' . $diff->i . ' minutos';
-    }
 
     private function playerData(Player $player): array
     {

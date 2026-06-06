@@ -15,7 +15,10 @@ class Player extends Model
         'sanity',
         'suspicion',
         'location_scene_id',
-        'email', 
+        'email',
+        'email_verified',
+        'verify_token',
+        'password',
         'token',
     ];
 

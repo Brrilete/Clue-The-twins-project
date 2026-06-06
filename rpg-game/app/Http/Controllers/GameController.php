@@ -117,4 +117,79 @@ public function sceneText(int $sceneId, int $playerId)
 
         return response()->json(['success' => true]);
     }
+
+
+    public function inventory(int $playerId)
+{
+    $items = \App\Models\PlayerItem::where('player_id', $playerId)
+        ->with('item')
+        ->get()
+        ->map(fn($pi) => [
+            'id' => $pi->item->id,
+            'name' => $pi->item->name,
+            'description' => $pi->item->description,
+        ]);
+
+    return response()->json(['items' => $items]);
+}
+
+public function minigameResult(Request $request)
+{
+    $request->validate([
+        'player_id' => 'required|integer',
+        'game' => 'required|string',
+        'result' => 'required|in:win,lose,draw',
+        'score' => 'nullable|integer',
+    ]);
+
+    $player = Player::findOrFail($request->player_id);
+
+    $message = '';
+
+    if ($request->result === 'win') {
+        $player->suspicion = max(0, $player->suspicion - 10);
+        $message = 'Ganas la mano. El crupier te mira con respeto.\nAlgo en el ambiente cambia.';
+    } elseif ($request->result === 'lose') {
+        $player->suspicion = min(100, $player->suspicion + 5);
+        $message = 'Pierdes. El dinero desaparece de la mesa.\nAlguien al fondo te observa.';
+    } else {
+        $message = 'Empate. Recuperas lo apostado.\nNadie gana. Nadie pierde.';
+    }
+
+    // Tras 3 victorias → crupier da información
+    $wins = \App\Models\History::where('player_id', $player->id)
+        ->where('action_key', 'blackjack_win')
+        ->count();
+
+    if ($request->result === 'win' && $wins >= 2) {
+        $message .= "\n\nEl crupier se inclina hacia ti mientras recoge las cartas.\n\"El hombre de la foto que me enseñaste.\nLe vi aquí hace tres semanas.\nPerdió mucho dinero.\nSalió con alguien que no conocía.\"";
+        
+        \App\Models\History::create([
+            'player_id' => $player->id,
+            'scene_id' => $player->location_scene_id,
+            'action_key' => 'blackjack_info',
+            'message' => $message,
+            'is_player' => 0,
+        ]);
+    }
+
+    \App\Models\History::create([
+        'player_id' => $player->id,
+        'scene_id' => $player->location_scene_id,
+        'action_key' => 'blackjack_' . $request->result,
+        'message' => $message,
+        'is_player' => 0,
+    ]);
+
+    $player->save();
+
+    return response()->json([
+        'message' => $message,
+        'player' => [
+            'id' => $player->id,
+            'suspicion' => $player->suspicion,
+            'sanity' => $player->sanity,
+        ]
+    ]);
+}
 }

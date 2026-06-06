@@ -26,14 +26,16 @@ class GameService
 
     public function play(Player $player, string $text)
     {
-        // Guardar input del jugador
-        History::create([
-            'player_id' => $player->id,
-            'scene_id' => $player->location_scene_id,
-            'action_key' => 'player_input',
-            'message' => $text,
-            'is_player' => 1,
-        ]);
+        // Solo guardar input del jugador si NO está en interrogatorio
+        if ($player->location_scene_id !== 2) {
+            History::create([
+                'player_id' => $player->id,
+                'scene_id' => $player->location_scene_id,
+                'action_key' => 'player_input',
+                'message' => $text,
+                'is_player' => 1,
+            ]);
+        }
 
         // Calabozo
         if ($player->location_scene_id === 3) {
@@ -44,31 +46,91 @@ class GameService
             }
         }
 
-        // Interrogatorio
+        // Interrogatorio — NO llamar saveResponse aquí, InterrogationService ya guarda
         if ($player->location_scene_id === 2) {
             $result = $this->interrogationService->handle($player, $text);
-            $this->saveResponse($player, $result['text'], $result['action']);
             return $result;
+        }
+
+        // Casa de Tomás — si sospecha >= 60 → calabozo
+        if ($player->location_scene_id === 6 && $player->suspicion >= 60) {
+            $player->location_scene_id = 3;
+            $player->save();
+            $text = "Dos coches patrulla frente al edificio.\nTe estaban esperando.\n\"Acompáñenos.\"\nOtra vez el calabozo. Esta vez 24 horas.";
+            History::create([
+                'player_id' => $player->id,
+                'scene_id' => 6,
+                'action_key' => 'detenido',
+                'message' => $text,
+                'is_player' => 0,
+            ]);
+            return [
+                'player' => $this->playerData($player),
+                'scene' => 'Casa de Tomás',
+                'action' => 'detenido',
+                'text' => $text,
+                'next_scene' => 3
+            ];
+        }
+
+        // Bar — tras 3 cervezas fuerza ir al servicio
+        if ($player->location_scene_id === 5) {
+            $beerCount = PlayerAction::where('player_id', $player->id)
+                ->where('action', 'beber')
+                ->where('scene_id', 5)
+                ->count();
+
+            if ($beerCount >= 3) {
+                $scene = $this->sceneService->getScene(5);
+                $options = $this->sceneService->getOptions($scene);
+                $result = $this->ai->classify($text, $options);
+                $action = $result['opcion'] ?? 'beber';
+
+                if ($action !== 'ir_servicio' && $action !== 'salir') {
+                    $responseText = "Tres cervezas empiezan a hacer efecto.\nNecesitas ir al servicio urgentemente.\nNo puedes concentrarte en otra cosa.";
+                    History::create([
+                        'player_id' => $player->id,
+                        'scene_id' => 5,
+                        'action_key' => 'necesita_servicio',
+                        'message' => $responseText,
+                        'is_player' => 0,
+                    ]);
+                    return [
+                        'player' => $this->playerData($player),
+                        'scene' => 'Bar',
+                        'action' => 'necesita_servicio',
+                        'text' => $responseText,
+                        'next_scene' => null
+                    ];
+                }
+            }
         }
 
         // Lógica normal
         $scene = $this->sceneService->getScene($player->location_scene_id);
-        $options = $this->sceneService->getOptions($scene);
-
+        //$options = $this->sceneService->getOptions($scene);
+        $options = $this->sceneService->getOptions($scene, $player);
         $result = $this->ai->classify($text, $options);
         $action = $result['opcion'] ?? array_key_first($options);
 
         PlayerAction::create([
             'player_id' => $player->id,
-            'action' => $action
+            'action' => $action,
+            'scene_id' => $scene->id,
         ]);
 
         $count = PlayerAction::where('player_id', $player->id)
             ->where('action', $action)
+            ->where('scene_id', $scene->id)
             ->count();
 
         $rule = ActionRule::where('action', $action)
+            ->where(function ($q) use ($scene) {
+                $q->where('scene_id', $scene->id)
+                    ->orWhereNull('scene_id');
+            })
             ->where('count', '<=', $count)
+            ->orderBy('scene_id', 'desc')
             ->orderBy('count', 'desc')
             ->first();
 
@@ -86,9 +148,9 @@ class GameService
 
         $player->save();
 
-        $finalText = $responseText ?? 'No ocurre nada relevante...';
+        //$finalText = $responseText ?? 'No ocurre nada relevante...';
+        $finalText = $responseText ?? ($nextScene ? '' : 'No ocurre nada relevante...');
 
-        // Guardar respuesta del sistema
         History::create([
             'player_id' => $player->id,
             'scene_id' => $scene->id,
