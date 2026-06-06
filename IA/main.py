@@ -2,7 +2,6 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
-from spellchecker import SpellChecker
 import requests
 import os
 
@@ -11,30 +10,10 @@ from synonyms import SYNONYMS
 app = FastAPI()
 model = SentenceTransformer('intfloat/multilingual-e5-base')
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434/api/generate")
-spell = SpellChecker(language='es')
 
 class RequestData(BaseModel):
     text: str
     options: dict
-
-# 🔹 CORRECCIÓN DE TYPOS
-def correct_typos(text: str) -> str:
-    words = text.lower().split()
-    corrected_words = []
-
-    for word in words:
-        if len(word) < 4:
-            corrected_words.append(word)
-            continue
-
-        correction = spell.correction(word)
-        if correction and correction != word:
-            print(f"Corregido: '{word}' → '{correction}'")
-            corrected_words.append(correction)
-        else:
-            corrected_words.append(word)
-
-    return ' '.join(corrected_words)
 
 # 🔹 EMBEDDINGS
 def get_top_options(text, options):
@@ -94,13 +73,8 @@ REGLAS:
 # 🔹 ENDPOINT
 @app.post("/clasificar")
 def clasificar(data: RequestData):
-    # Corregir typos antes de procesar
-    corrected_text = correct_typos(data.text)
-    if corrected_text != data.text.lower():
-        print(f"Texto corregido: '{data.text}' → '{corrected_text}'")
-
-    candidates = get_top_options(corrected_text, data.options)
-    text_lower = corrected_text.lower().strip()
+    text_lower = data.text.lower().strip()
+    candidates = get_top_options(text_lower, data.options)
 
     # 🔥 BOOST POR SINÓNIMOS
     for i, c in enumerate(candidates):
@@ -127,7 +101,7 @@ def clasificar(data: RequestData):
     if diff > 0.05:
         decision = candidates[0][0]
     else:
-        decision = ask_llm(corrected_text, candidates)
+        decision = ask_llm(text_lower, candidates)
 
     return {
         "opcion": decision,
