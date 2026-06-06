@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
-from rapidfuzz import fuzz
+from spellchecker import SpellChecker
 import requests
 import os
 
@@ -11,6 +11,7 @@ from synonyms import SYNONYMS
 app = FastAPI()
 model = SentenceTransformer('intfloat/multilingual-e5-base')
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434/api/generate")
+spell = SpellChecker(language='es')
 
 class RequestData(BaseModel):
     text: str
@@ -21,29 +22,17 @@ def correct_typos(text: str) -> str:
     words = text.lower().split()
     corrected_words = []
 
-    # Recopila todas las palabras conocidas de los sinónimos
-    all_words = set()
-    for syns in SYNONYMS.values():
-        for syn in syns:
-            for word in syn.split():
-                if len(word) >= 4:
-                    all_words.add(word)
-
     for word in words:
         if len(word) < 4:
             corrected_words.append(word)
             continue
 
-        best_match = word
-        best_score = 0
-
-        for known_word in all_words:
-            score = fuzz.ratio(word, known_word)
-            if score > 80 and score > best_score:
-                best_score = score
-                best_match = known_word
-
-        corrected_words.append(best_match)
+        correction = spell.correction(word)
+        if correction and correction != word:
+            print(f"Corregido: '{word}' → '{correction}'")
+            corrected_words.append(correction)
+        else:
+            corrected_words.append(word)
 
     return ' '.join(corrected_words)
 
@@ -108,7 +97,7 @@ def clasificar(data: RequestData):
     # Corregir typos antes de procesar
     corrected_text = correct_typos(data.text)
     if corrected_text != data.text.lower():
-        print(f"Typo corregido: '{data.text}' → '{corrected_text}'")
+        print(f"Texto corregido: '{data.text}' → '{corrected_text}'")
 
     candidates = get_top_options(corrected_text, data.options)
     text_lower = corrected_text.lower().strip()
