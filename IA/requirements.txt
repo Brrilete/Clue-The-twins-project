@@ -3,4 +3,4 @@ uvicorn
 transformers
 torch
 sentence-transformers
-requests
+requestsrapidfuzz
