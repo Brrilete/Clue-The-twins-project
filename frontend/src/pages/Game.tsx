@@ -8,6 +8,7 @@ import Blackjack from '../components/Blackjack'
 interface Message {
     text: string
     isPlayer: boolean
+    character?: string
 }
 
 interface Player {
@@ -23,6 +24,10 @@ interface Item {
     id: number
     name: string
     description: string
+}
+
+const CHARACTER_AVATARS: Record<string, string> = {
+    'policia': '/images/policia.png',
 }
 
 function getItemIcon(id: number): string {
@@ -50,6 +55,7 @@ export default function Game() {
     const [showBlackjack, setShowBlackjack] = useState(false)
     const [inventory, setInventory] = useState<Item[]>([])
     const [selectedItem, setSelectedItem] = useState<Item | null>(null)
+    const [currentCharacter, setCurrentCharacter] = useState<string | null>(null)
     const [searchParams] = useSearchParams()
     const bottomRef = useRef<HTMLDivElement>(null)
 
@@ -68,6 +74,11 @@ export default function Game() {
                 if (data.messages && data.messages.length > 0) {
                     setMessages(data.messages)
                     setTypingDone(true)
+                    // Restaurar el último personaje
+                    const lastMsg = data.messages[data.messages.length - 1]
+                    if (!lastMsg.isPlayer && lastMsg.character) {
+                        setCurrentCharacter(lastMsg.character)
+                    }
                 } else {
                     loadScene(1)
                 }
@@ -88,6 +99,7 @@ export default function Game() {
             const res = await api.get(`/scene/${sceneId}/text/${playerId}`)
             setScene(res.data.text, res.data.image_url)
             setTypingDone(false)
+            setCurrentCharacter(null)
             setMessages(prev => [...prev, { text: res.data.text, isPlayer: false }])
         } catch (e) {
             console.error(e)
@@ -120,9 +132,16 @@ export default function Game() {
             })
             const data = res.data
 
-            // Activar blackjack si la acción es jugar en escena 13
+            // Actualizar personaje actual
+            if (data.character) {
+                setCurrentCharacter(data.character)
+            } else {
+                setCurrentCharacter(null)
+            }
+
+            // Activar blackjack
             if (data.action === 'jugar' && player?.location_scene_id === 13) {
-                setMessages(prev => [...prev, { text: data.text, isPlayer: false }])
+                setMessages(prev => [...prev, { text: data.text, isPlayer: false, character: data.character }])
                 setTimeout(() => setShowBlackjack(true), fastMode ? 100 : data.text.length * 15 + 500)
                 setLoading(false)
                 return
@@ -130,21 +149,20 @@ export default function Game() {
 
             if (data.next_scene) {
                 if (data.text && data.text.trim() !== '') {
-                    setMessages(prev => [...prev, { text: data.text, isPlayer: false }])
+                    setMessages(prev => [...prev, { text: data.text, isPlayer: false, character: data.character }])
                 }
                 setTimeout(async () => {
                     const sceneRes = await api.get(`/scene/${data.next_scene}/text/${playerId}`)
                     setMessages(prev => [...prev, { text: sceneRes.data.text, isPlayer: false }])
                     setScene(sceneRes.data.text, sceneRes.data.image_url)
-                    // Actualizar player con nueva escena
+                    setCurrentCharacter(null)
                     setPlayer(prev => prev ? { ...prev, location_scene_id: data.next_scene } : prev)
                 }, data.text?.trim() ? data.text.length * 15 + 1000 : 100)
             } else {
-                setMessages(prev => [...prev, { text: data.text, isPlayer: false }])
+                setMessages(prev => [...prev, { text: data.text, isPlayer: false, character: data.character }])
                 setScene(data.text, sceneImage)
             }
 
-            // Actualizar datos del jugador
             if (data.player) {
                 setPlayer(data.player)
             }
@@ -168,6 +186,10 @@ export default function Game() {
         }
     }
 
+    // Último mensaje del narrador para saber qué avatar mostrar
+    const lastNarratorMessage = [...messages].reverse().find(m => !m.isPlayer)
+    const avatarToShow = lastNarratorMessage?.character ?? currentCharacter
+
     return (
         <div className="min-h-screen bg-black relative">
             {/* Imagen de fondo FIJA */}
@@ -181,6 +203,21 @@ export default function Game() {
                     transform: 'scale(1.05)',
                 }}
             />
+
+            {/* Avatar del personaje — esquina inferior derecha */}
+            {avatarToShow && CHARACTER_AVATARS[avatarToShow] && (
+                <div
+                    className="fixed bottom-0 right-0 z-40 pointer-events-none"
+                    style={{ width: '25vw', height: '67vh' }}
+                >
+                    <img
+                        src={CHARACTER_AVATARS[avatarToShow]}
+                        alt="personaje"
+                        className="w-full h-full object-contain object-bottom"
+                        style={{ filter: 'drop-shadow(-4px 0px 16px rgba(0,0,0,0.9))' }}
+                    />
+                </div>
+            )}
 
             {/* Botones admin */}
             {(player?.role === 'admin' || player?.role === 'advanced') && (
@@ -221,16 +258,12 @@ export default function Game() {
                         <button
                             onClick={() => setShowInventory(false)}
                             className="text-white/40 hover:text-white transition text-sm"
-                        >
-                            ✕
-                        </button>
+                        >✕</button>
                     </div>
                     <div className="flex h-52">
                         <div className="w-1/2 border-r border-white/10 overflow-y-auto">
                             {inventory.length === 0 ? (
-                                <p className="text-white/30 text-xs p-4 font-mono text-center mt-4">
-                                    Sin objetos
-                                </p>
+                                <p className="text-white/30 text-xs p-4 font-mono text-center mt-4">Sin objetos</p>
                             ) : (
                                 inventory.map(item => (
                                     <button
@@ -241,9 +274,7 @@ export default function Game() {
                                         }`}
                                     >
                                         <span className="text-2xl">{getItemIcon(item.id)}</span>
-                                        <span className="text-white/60 text-xs font-mono text-center leading-tight">
-                                            {item.name}
-                                        </span>
+                                        <span className="text-white/60 text-xs font-mono text-center leading-tight">{item.name}</span>
                                     </button>
                                 ))
                             )}
@@ -256,9 +287,7 @@ export default function Game() {
                                     <p className="text-white/60 font-mono text-xs leading-relaxed">{selectedItem.description}</p>
                                 </>
                             ) : (
-                                <p className="text-white/20 font-mono text-xs mt-4 text-center">
-                                    Pulsa un objeto para ver su descripción
-                                </p>
+                                <p className="text-white/20 font-mono text-xs mt-4 text-center">Pulsa un objeto para ver su descripción</p>
                             )}
                         </div>
                     </div>
@@ -269,10 +298,7 @@ export default function Game() {
             {showBlackjack && (
                 <Blackjack
                     playerId={playerId}
-                    onClose={() => {
-                        setShowBlackjack(false)
-                        setTypingDone(true)
-                    }}
+                    onClose={() => { setShowBlackjack(false); setTypingDone(true) }}
                     onResult={(msg) => {
                         setShowBlackjack(false)
                         setTypingDone(false)
