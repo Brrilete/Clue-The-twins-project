@@ -54,6 +54,7 @@ public function sceneText(int $sceneId, int $playerId)
     return response()->json([
         'text' => $text,
         'image_url' => $sceneText?->image_url ?? null,
+        'character' => $sceneText?->character ?? null,
     ]);
 }
 
@@ -80,6 +81,7 @@ public function sceneText(int $sceneId, int $playerId)
         $messages = $history->map(fn($h) => [
             'text' => $h->message,
             'isPlayer' => (bool) $h->is_player,
+            'character' => $h->character ?? null,
         ]);
 
         return response()->json([
