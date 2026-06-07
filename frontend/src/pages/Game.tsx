@@ -26,10 +26,6 @@ interface Item {
     description: string
 }
 
-const CHARACTER_AVATARS: Record<string, string> = {
-    'policia': '/images/policia.png',
-}
-
 function getItemIcon(id: number): string {
     const icons: Record<number, string> = {
         1: '📄',
@@ -56,12 +52,22 @@ export default function Game() {
     const [inventory, setInventory] = useState<Item[]>([])
     const [selectedItem, setSelectedItem] = useState<Item | null>(null)
     const [currentCharacter, setCurrentCharacter] = useState<string | null>(null)
+    const [characterAvatars, setCharacterAvatars] = useState<Record<string, string>>({})
     const [searchParams] = useSearchParams()
     const bottomRef = useRef<HTMLDivElement>(null)
 
     const playerId = searchParams.get('player_id') ?? '1'
 
     useEffect(() => {
+        const loadCharacters = async () => {
+            try {
+                const res = await api.get('/characters')
+                setCharacterAvatars(res.data)
+            } catch (e) {
+                console.error(e)
+            }
+        }
+
         const loadHistory = async () => {
             try {
                 const res = await api.get(`/player/${playerId}/history`)
@@ -74,7 +80,6 @@ export default function Game() {
                 if (data.messages && data.messages.length > 0) {
                     setMessages(data.messages)
                     setTypingDone(true)
-                    // Restaurar el último personaje
                     const lastMsg = data.messages[data.messages.length - 1]
                     if (!lastMsg.isPlayer && lastMsg.character) {
                         setCurrentCharacter(lastMsg.character)
@@ -87,6 +92,7 @@ export default function Game() {
             }
         }
 
+        loadCharacters()
         loadHistory()
     }, [])
 
@@ -99,8 +105,16 @@ export default function Game() {
             const res = await api.get(`/scene/${sceneId}/text/${playerId}`)
             setScene(res.data.text, res.data.image_url)
             setTypingDone(false)
-            setCurrentCharacter(null)
-            setMessages(prev => [...prev, { text: res.data.text, isPlayer: false }])
+            if (res.data.character) {
+                setCurrentCharacter(res.data.character)
+            } else {
+                setCurrentCharacter(null)
+            }
+            setMessages(prev => [...prev, {
+                text: res.data.text,
+                isPlayer: false,
+                character: res.data.character ?? undefined
+            }])
         } catch (e) {
             console.error(e)
         }
@@ -132,14 +146,12 @@ export default function Game() {
             })
             const data = res.data
 
-            // Actualizar personaje actual
             if (data.character) {
                 setCurrentCharacter(data.character)
             } else {
                 setCurrentCharacter(null)
             }
 
-            // Activar blackjack
             if (data.action === 'jugar' && player?.location_scene_id === 13) {
                 setMessages(prev => [...prev, { text: data.text, isPlayer: false, character: data.character }])
                 setTimeout(() => setShowBlackjack(true), fastMode ? 100 : data.text.length * 15 + 500)
@@ -153,9 +165,17 @@ export default function Game() {
                 }
                 setTimeout(async () => {
                     const sceneRes = await api.get(`/scene/${data.next_scene}/text/${playerId}`)
-                    setMessages(prev => [...prev, { text: sceneRes.data.text, isPlayer: false }])
+                    setMessages(prev => [...prev, {
+                        text: sceneRes.data.text,
+                        isPlayer: false,
+                        character: sceneRes.data.character ?? undefined
+                    }])
                     setScene(sceneRes.data.text, sceneRes.data.image_url)
-                    setCurrentCharacter(null)
+                    if (sceneRes.data.character) {
+                        setCurrentCharacter(sceneRes.data.character)
+                    } else {
+                        setCurrentCharacter(null)
+                    }
                     setPlayer(prev => prev ? { ...prev, location_scene_id: data.next_scene } : prev)
                 }, data.text?.trim() ? data.text.length * 15 + 1000 : 100)
             } else {
@@ -186,7 +206,6 @@ export default function Game() {
         }
     }
 
-    // Último mensaje del narrador para saber qué avatar mostrar
     const lastNarratorMessage = [...messages].reverse().find(m => !m.isPlayer)
     const avatarToShow = lastNarratorMessage?.character ?? currentCharacter
 
@@ -204,14 +223,14 @@ export default function Game() {
                 }}
             />
 
-            {/* Avatar del personaje — esquina inferior derecha */}
-            {avatarToShow && CHARACTER_AVATARS[avatarToShow] && (
+            {/* Avatar del personaje */}
+            {avatarToShow && characterAvatars[avatarToShow] && (
                 <div
                     className="fixed bottom-0 right-0 z-40 pointer-events-none"
                     style={{ width: '25vw', height: '67vh' }}
                 >
                     <img
-                        src={CHARACTER_AVATARS[avatarToShow]}
+                        src={characterAvatars[avatarToShow]}
                         alt="personaje"
                         className="w-full h-full object-contain object-bottom"
                         style={{ filter: 'drop-shadow(-4px 0px 16px rgba(0,0,0,0.9))' }}

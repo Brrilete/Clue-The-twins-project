@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use App\Models\Player;
 use App\Services\GameService;
-
+use Illuminate\Support\Facades\DB;
 class GameController extends Controller
 {
     protected $game;
@@ -191,5 +191,16 @@ public function minigameResult(Request $request)
             'sanity' => $player->sanity,
         ]
     ]);
+}
+
+
+public function characters()
+{
+    $characters = DB::table('characters')->get();
+    $map = [];
+    foreach ($characters as $c) {
+        $map[$c->key] = $c->image_url;
+    }
+    return response()->json($map);
 }
 }
