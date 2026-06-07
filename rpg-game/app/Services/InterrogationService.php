@@ -45,7 +45,8 @@ class InterrogationService
                 'scene' => 'Pasillo del Hotel',
                 'action' => 'fin_interrogatorio',
                 'text' => '"Muy bien." El inspector cierra su libreta. "Acompáñeme." No es una petición.',
-                'next_scene' => 3
+                'next_scene' => 3,
+                'character' => 'policia'
             ];
         }
 
@@ -55,7 +56,8 @@ class InterrogationService
         History::create([
             'player_id' => $player->id,
             'scene_id' => $player->location_scene_id,
-            'action_key' => $question['key']
+            'action_key' => $question['key'],
+            'character' => 'policia',
         ]);
 
         if ($isLying) {
@@ -66,9 +68,8 @@ class InterrogationService
             $responseText = $this->truthResponse($question['key']);
         }
 
-        // Si es la última pregunta → detener al jugador
         if ($currentQuestionNum === count($this->questions)) {
-       $responseText .= "\n\nEl inspector cierra su libreta despacio.\n\"Queda usted detenido como sospechoso de asesinato.\"\n\n Esposas. Frías. Metálicas.\n\nEl pasillo. Las escaleras. Un coche patrulla.\nBarcelona pasa por la ventanilla como si fuera otra ciudad.\n\nUna puerta de hierro.\nUn número grabado en la pared.\nTu nombre en un registro.\n\nBienvenido al calabozo.";
+            $responseText .= "\n\nEl inspector cierra su libreta despacio.\n\"Queda usted detenido como sospechoso de asesinato.\"\n\nEsposas. Frías. Metálicas.\n\nEl pasillo. Las escaleras. Un coche patrulla.\nBarcelona pasa por la ventanilla como si fuera otra ciudad.\n\nUna puerta de hierro.\nUn número grabado en la pared.\nTu nombre en un registro.\n\nBienvenido al calabozo.";
             $player->location_scene_id = 3;
             $player->save();
 
@@ -77,11 +78,11 @@ class InterrogationService
                 'scene' => 'Pasillo del Hotel',
                 'action' => $question['key'],
                 'text' => $responseText,
-                'next_scene' => 3
+                'next_scene' => 3,
+                'character' => 'policia'
             ];
         }
 
-        // Si quedan preguntas, añadir la siguiente
         $nextQuestionNum = $currentQuestionNum + 1;
         if (isset($this->questions[$nextQuestionNum])) {
             $responseText .= "\n\n" . $this->questions[$nextQuestionNum]['text'];
@@ -94,7 +95,8 @@ class InterrogationService
             'scene' => 'Pasillo del Hotel',
             'action' => $question['key'],
             'text' => $responseText,
-            'next_scene' => null
+            'next_scene' => null,
+            'character' => 'policia'
         ];
     }
 

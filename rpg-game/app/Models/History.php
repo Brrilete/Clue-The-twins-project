@@ -17,6 +17,7 @@ class History extends Model
         'action_key',
         'message',
         'is_player',
+        'character',
     ];
 
     public function player()
