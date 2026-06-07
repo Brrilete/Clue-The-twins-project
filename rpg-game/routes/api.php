@@ -22,6 +22,7 @@ Route::post('/player/{playerId}/reset', [GameController::class, 'resetPlayer']);
 
 Route::post('/game/minigame/result', [GameController::class, 'minigameResult']);
 
+Route::get('/characters', [GameController::class, 'characters']);
 
 
 Route::get('/test', function () {
