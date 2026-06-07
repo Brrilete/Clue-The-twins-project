@@ -5,15 +5,35 @@ from sklearn.metrics.pairwise import cosine_similarity
 import requests
 import os
 
-from synonyms import SYNONYMS
+from synonyms.hotel import SYNONYMS as S_HOTEL
+from synonyms.calabozo import SYNONYMS as S_CALABOZO
+from synonyms.bar import SYNONYMS as S_BAR
+from synonyms.casa_muerto import SYNONYMS as S_CASA
+from synonyms.farmacia import SYNONYMS as S_FARMACIA
+from synonyms.navegacion import SYNONYMS as S_NAV
 
 app = FastAPI()
 model = SentenceTransformer('intfloat/multilingual-e5-base')
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434/api/generate")
 
+# Sinónimos por escena
+SCENE_SYNONYMS = {
+    1: {**S_HOTEL, **S_NAV},
+    2: {**S_NAV},
+    3: {**S_CALABOZO, **S_NAV},
+    4: {**S_NAV},
+    5: {**S_BAR, **S_NAV},
+    6: {**S_CASA, **S_NAV},
+    7: {**S_FARMACIA, **S_NAV},
+}
+
+# Sinónimos globales como fallback
+from synonyms import SYNONYMS as SYNONYMS_ALL
+
 class RequestData(BaseModel):
     text: str
     options: dict
+    scene_id: int = 0
 
 # 🔹 EMBEDDINGS
 def get_top_options(text, options):
@@ -74,13 +94,17 @@ REGLAS:
 @app.post("/clasificar")
 def clasificar(data: RequestData):
     text_lower = data.text.lower().strip()
+
+    # Sinónimos específicos de la escena actual
+    scene_syns = SCENE_SYNONYMS.get(data.scene_id, SYNONYMS_ALL)
+
     candidates = get_top_options(text_lower, data.options)
 
-    # 🔥 BOOST POR SINÓNIMOS
+    # 🔥 BOOST POR SINÓNIMOS DE LA ESCENA
     for i, c in enumerate(candidates):
         action_id = c[0]
-        if action_id in SYNONYMS:
-            for synonym in SYNONYMS[action_id]:
+        if action_id in scene_syns:
+            for synonym in scene_syns[action_id]:
                 if synonym in text_lower or text_lower in synonym:
                     candidates[i] = (c[0], c[1], min(1.0, c[2] + 0.3))
                     break
