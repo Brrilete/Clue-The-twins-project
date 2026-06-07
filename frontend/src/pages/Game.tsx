@@ -60,7 +60,20 @@ export default function Game() {
             try {
                 const res = await api.get(`/player/${playerId}/history`)
                 const data = res.data
-                if (data.player) setPlayer(data.player)
+
+                if (data.player) {
+                    setPlayer(data.player)
+                    // Restaurar imagen de la escena actual
+                    try {
+                        const sceneRes = await api.get(`/scene/${data.player.location_scene_id}/text/${playerId}`)
+                        if (sceneRes.data.image_url) {
+                            setScene('', sceneRes.data.image_url)
+                        }
+                    } catch (e) {
+                        console.error(e)
+                    }
+                }
+
                 if (data.messages?.length > 0) {
                     setMessages(data.messages)
                     setTypingDone(true)
