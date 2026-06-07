@@ -166,7 +166,8 @@ class GameService
             'scene' => $scene->name,
             'action' => $action,
             'text' => $finalText,
-            'next_scene' => $nextScene
+            'next_scene' => $nextScene,
+            'character' => $rule?->character ?? null
         ];
     }
 
