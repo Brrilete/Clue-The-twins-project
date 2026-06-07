@@ -221,6 +221,7 @@ class GameService
             'sanity' => $player->sanity,
             'suspicion' => $player->suspicion,
             'location_scene_id' => $player->location_scene_id,
+            'role' => $player->role,  // ← añade esto
         ];
     }
 }
