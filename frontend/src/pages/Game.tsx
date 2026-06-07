@@ -226,7 +226,8 @@ export default function Game() {
             {/* Avatar del personaje */}
             {avatarToShow && characterAvatars[avatarToShow] && (
                 <div
-                    className="fixed bottom-0 right-0 z-40 pointer-events-none"
+                    className={`fixed bottom-0 z-40 pointer-events-none ${avatarToShow === 'presoI' ? 'left-0' : 'right-0'
+                        }`}
                     style={{ width: '25vw', height: '67vh' }}
                 >
                     <img
@@ -243,11 +244,10 @@ export default function Game() {
                 <div className="fixed top-4 right-4 z-50 flex gap-2">
                     <button
                         onClick={() => setFastMode(f => !f)}
-                        className={`px-3 py-2 text-xs border rounded-lg transition ${
-                            fastMode
+                        className={`px-3 py-2 text-xs border rounded-lg transition ${fastMode
                                 ? 'text-white border-white/40 bg-white/10'
                                 : 'text-white/30 border-white/10 hover:text-white/60 hover:border-white/30'
-                        }`}
+                            }`}
                     >
                         ⚡ {fastMode ? 'Rápido ON' : 'Rápido OFF'}
                     </button>
@@ -288,9 +288,8 @@ export default function Game() {
                                     <button
                                         key={item.id}
                                         onClick={() => setSelectedItem(item)}
-                                        className={`w-full flex flex-col items-center gap-1 p-3 hover:bg-white/10 transition border-b border-white/5 ${
-                                            selectedItem?.id === item.id ? 'bg-white/10' : ''
-                                        }`}
+                                        className={`w-full flex flex-col items-center gap-1 p-3 hover:bg-white/10 transition border-b border-white/5 ${selectedItem?.id === item.id ? 'bg-white/10' : ''
+                                            }`}
                                     >
                                         <span className="text-2xl">{getItemIcon(item.id)}</span>
                                         <span className="text-white/60 text-xs font-mono text-center leading-tight">{item.name}</span>
