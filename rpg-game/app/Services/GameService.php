@@ -83,7 +83,8 @@ class GameService
             if ($beerCount >= 3) {
                 $scene = $this->sceneService->getScene(5);
                 $options = $this->sceneService->getOptions($scene);
-                $result = $this->ai->classify($text, $options);
+                $result = $this->ai->classify($text, $options, $scene->id);
+                //$result = $this->ai->classify($text, $options);
                 $action = $result['opcion'] ?? 'beber';
 
                 if ($action !== 'ir_servicio' && $action !== 'salir') {
@@ -110,7 +111,8 @@ class GameService
         $scene = $this->sceneService->getScene($player->location_scene_id);
         //$options = $this->sceneService->getOptions($scene);
         $options = $this->sceneService->getOptions($scene, $player);
-        $result = $this->ai->classify($text, $options);
+        $result = $this->ai->classify($text, $options, $scene->id);
+        //$result = $this->ai->classify($text, $options);
         $action = $result['opcion'] ?? array_key_first($options);
 
         PlayerAction::create([
