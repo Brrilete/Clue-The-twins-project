@@ -1,0 +1,36 @@
+{
+  "login": {
+    "title": "GEMELOS",
+    "subtitle": "Un misterio te espera",
+    "google": "Continuar con Google",
+    "github": "Continuar con GitHub",
+    "createAccount": "Crear cuenta",
+    "alreadyHave": "Ya tengo cuenta — Iniciar sesión",
+    "enterGuest": "Entrar",
+    "back": "← Volver",
+    "name": "Nombre *",
+    "email": "Email *",
+    "password": "Contraseña * (mínimo 6 caracteres)",
+    "confirmPassword": "Confirmar contraseña *",
+    "creating": "Creando cuenta...",
+    "entering": "Entrando...",
+    "errorFields": "Rellena todos los campos obligatorios.",
+    "errorPasswords": "Las contraseñas no coinciden.",
+    "errorPassword6": "La contraseña debe tener al menos 6 caracteres.",
+    "errorLogin": "Error al iniciar sesión.",
+    "checkEmail": "📧 Revisa tu email",
+    "verificationSent": "Enviamos un link de verificación a",
+    "createAccountTitle": "Crea tu cuenta para guardar el progreso",
+    "loginTitle": "Inicia sesión con tu cuenta"
+  },
+  "game": {
+    "whatDoYouDo": "¿Qué haces?",
+    "inventory": "Inventario",
+    "noItems": "Sin objetos",
+    "selectItem": "Pulsa un objeto para ver su descripción",
+    "resetConfirm": "¿Resetear tu historia? Perderás todo el progreso.",
+    "fastOn": "Rápido ON",
+    "fastOff": "Rápido OFF",
+    "restart": "Reiniciar"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "login": {
+    "title": "GEMELOS",
+    "subtitle": "A mystery awaits you",
+    "google": "Continue with Google",
+    "github": "Continue with GitHub",
+    "createAccount": "Create account",
+    "alreadyHave": "I already have an account — Sign in",
+    "enterGuest": "Enter",
+    "back": "← Back",
+    "name": "Name *",
+    "email": "Email *",
+    "password": "Password * (minimum 6 characters)",
+    "confirmPassword": "Confirm password *",
+    "creating": "Creating account...",
+    "entering": "Signing in...",
+    "errorFields": "Please fill in all required fields.",
+    "errorPasswords": "Passwords do not match.",
+    "errorPassword6": "Password must be at least 6 characters.",
+    "errorLogin": "Error signing in.",
+    "checkEmail": "📧 Check your email",
+    "verificationSent": "We sent a verification link to",
+    "createAccountTitle": "Create your account to save progress",
+    "loginTitle": "Sign in to your account"
+  },
+  "game": {
+    "whatDoYouDo": "What do you do?",
+    "inventory": "Inventory",
+    "noItems": "No items",
+    "selectItem": "Click an item to see its description",
+    "resetConfirm": "Reset your story? You will lose all progress.",
+    "fastOn": "Fast ON",
+    "fastOff": "Fast OFF",
+    "restart": "Restart"
+  }
+}
