@@ -20,6 +20,8 @@ class Player extends Model
         'verify_token',
         'password',
         'token',
+        'language',
+
     ];
 
     public function scene()
