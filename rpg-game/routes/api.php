@@ -24,6 +24,7 @@ Route::post('/game/minigame/result', [GameController::class, 'minigameResult']);
 
 Route::get('/characters', [GameController::class, 'characters']);
 
+Route::post('/player/{playerId}/language', [GameController::class, 'setLanguage']);
 
 Route::get('/test', function () {
     return "OK";

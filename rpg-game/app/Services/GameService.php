@@ -151,8 +151,10 @@ class GameService
         $player->save();
 
         //$finalText = $responseText ?? 'No ocurre nada relevante...';
-        $finalText = $responseText ?? ($nextScene ? '' : 'No ocurre nada relevante...');
-
+        $lang = $player->language ?? 'es';
+        $finalText = $lang === 'en'
+            ? ($rule?->message_en ?? $rule?->message ?? ($nextScene ? '' : 'Nothing relevant happens...'))
+            : ($rule?->message ?? ($nextScene ? '' : 'No ocurre nada relevante...'));
         History::create([
             'player_id' => $player->id,
             'scene_id' => $scene->id,
@@ -224,7 +226,8 @@ class GameService
             'sanity' => $player->sanity,
             'suspicion' => $player->suspicion,
             'location_scene_id' => $player->location_scene_id,
-            'role' => $player->role,  // ← añade esto
+            'role' => $player->role,
+            'language' => $player->language ?? 'es',
         ];
     }
 }

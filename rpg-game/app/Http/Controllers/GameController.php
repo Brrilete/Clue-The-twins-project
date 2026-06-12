@@ -31,6 +31,7 @@ class GameController extends Controller
     public function sceneText(int $sceneId, int $playerId)
     {
         $player = Player::findOrFail($playerId);
+        $lang = $player->language ?? 'es';
 
         $visitCount = \App\Models\History::where('player_id', $playerId)
             ->where('scene_id', $sceneId)
@@ -40,13 +41,13 @@ class GameController extends Controller
         $sceneTextService = new \App\Services\SceneTextService();
         $sceneText = $sceneTextService->getText($sceneId, $playerId, $visitCount);
 
-        $text = $sceneText?->text ?? 'Llegas a un nuevo lugar...';
+        $text = $lang === 'en'
+            ? ($sceneText?->text_en ?? $sceneText?->text ?? 'You arrive somewhere new...')
+            : ($sceneText?->text ?? 'Llegas a un nuevo lugar...');
 
-        // Imagen desde scenes (base) 
         $sceneData = DB::table('scenes')->where('id', $sceneId)->first();
         $imageUrl = $sceneData?->image_url ?? null;
 
-        // Guardar en historial
         \App\Models\History::create([
             'player_id' => $playerId,
             'scene_id' => $sceneId,
@@ -97,10 +98,13 @@ class GameController extends Controller
                 'location_scene_id' => $player->location_scene_id,
                 'suspicion' => $player->suspicion,
                 'sanity' => $player->sanity,
+                'language' => $player->language ?? 'es',
+
             ],
             'messages' => $messages
         ]);
     }
+
 
 
     public function resetPlayer(int $playerId, Request $request)
@@ -210,4 +214,13 @@ class GameController extends Controller
         }
         return response()->json($map);
     }
+
+
+    public function setLanguage(int $playerId, Request $request)
+{
+    $player = Player::findOrFail($playerId);
+    $player->language = $request->input('language', 'es');
+    $player->save();
+    return response()->json(['success' => true]);
+}
 }

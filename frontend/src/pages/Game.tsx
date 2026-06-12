@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useGameStore } from '../store/gameStore'
 import api from '../api/client'
 import GameBackground from '../components/GameBackground'
@@ -23,6 +24,7 @@ interface Player {
     suspicion: number
     location_scene_id: number
     role: 'user' | 'advanced' | 'admin'
+    language?: string
 }
 
 interface Item {
@@ -33,6 +35,7 @@ interface Item {
 
 export default function Game() {
     const { sceneImage, setScene } = useGameStore()
+    const { i18n } = useTranslation()
     const [messages, setMessages] = useState<Message[]>([])
     const [typingDone, setTypingDone] = useState(false)
     const [input, setInput] = useState('')
@@ -63,15 +66,20 @@ export default function Game() {
 
                 if (data.player) {
                     setPlayer(data.player)
+
+                    // Sincronizar idioma del jugador
+                    if (data.player.language) {
+                        i18n.changeLanguage(data.player.language)
+                        localStorage.setItem('language', data.player.language)
+                    }
+
                     // Restaurar imagen de la escena actual
                     try {
                         const sceneRes = await api.get(`/scene/${data.player.location_scene_id}/text/${playerId}`)
                         if (sceneRes.data.image_url) {
                             setScene('', sceneRes.data.image_url)
                         }
-                    } catch (e) {
-                        console.error(e)
-                    }
+                    } catch (e) { console.error(e) }
                 }
 
                 if (data.messages?.length > 0) {
@@ -107,6 +115,15 @@ export default function Game() {
         try {
             const res = await api.get(`/player/${playerId}/inventory`)
             setInventory(res.data.items)
+        } catch (e) { console.error(e) }
+    }
+
+    const handleLanguageChange = async (lang: string) => {
+        i18n.changeLanguage(lang)
+        localStorage.setItem('language', lang)
+        try {
+            await api.post(`/player/${playerId}/language`, { language: lang })
+            window.location.reload()
         } catch (e) { console.error(e) }
     }
 
@@ -176,6 +193,30 @@ export default function Game() {
             <GameBackground sceneImage={sceneImage} />
 
             <CharacterAvatar avatarToShow={avatarToShow} characterAvatars={characterAvatars} />
+
+            {/* Selector de idioma */}
+            <div className="fixed top-4 left-4 z-50 flex gap-2">
+                <button
+                    onClick={() => handleLanguageChange('es')}
+                    className={`px-3 py-1 text-xs rounded border transition ${
+                        i18n.language === 'es'
+                            ? 'border-white text-white bg-white/10'
+                            : 'border-white/20 text-white/40 hover:border-white/40'
+                    }`}
+                >
+                    🇪🇸
+                </button>
+                <button
+                    onClick={() => handleLanguageChange('en')}
+                    className={`px-3 py-1 text-xs rounded border transition ${
+                        i18n.language === 'en'
+                            ? 'border-white text-white bg-white/10'
+                            : 'border-white/20 text-white/40 hover:border-white/40'
+                    }`}
+                >
+                    🇬🇧
+                </button>
+            </div>
 
             {(player?.role === 'admin' || player?.role === 'advanced') && (
                 <AdminControls
